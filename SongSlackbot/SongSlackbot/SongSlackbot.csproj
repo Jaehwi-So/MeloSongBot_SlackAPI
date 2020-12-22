@@ -195,9 +195,11 @@
     <Compile Include="Models\Charts.cs">
       <DependentUpon>SongSlackbotModel.tt</DependentUpon>
     </Compile>
+    <Compile Include="Models\Payload.cs" />
     <Compile Include="Models\ResutModels.cs" />
     <Compile Include="Models\IdentityModels.cs" />
     <Compile Include="Models\ManageViewModels.cs" />
+    <Compile Include="Slackbot\SlackBot.cs" />
     <Compile Include="Models\SongSlackbotModel.Context.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -214,7 +216,9 @@
       <DependentUpon>SongSlackbotModel.edmx</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Slackbot\SlackEventHandler.cs" />
     <Compile Include="Startup.cs" />
+    <Compile Include="Utils\SongCrawller.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Content\bootstrap.css" />

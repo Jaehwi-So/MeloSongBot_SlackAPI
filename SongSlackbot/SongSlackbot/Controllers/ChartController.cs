@@ -11,90 +11,59 @@ using OpenQA.Selenium;
 using System.Diagnostics;
 using OpenQA.Selenium.Chrome;
 using System.Threading.Tasks;
+using SongSlackbot.Utils;
 
 namespace SongSlackbot.Controllers
 {
+
+
     public class ChartController : ApiController
     {
         SongBotEntities db = new SongBotEntities();
+        SongCrawller crawller = new SongCrawller();
 
-        //크롤링 메서드
-        public ResultModels<List<Charts>> SongCrawling()
+        /*
+        public string method_test()
         {
-            List<Charts> list = new List<Charts>();
+            return "hello";
+        }
+        */
+
+        // GET api/<controller>
+        public ResultModels<List<Charts>> Get()
+        {
+            Trace.WriteLine("[Request Mapping : GET : api/chart]");
+            string type = Request.GetQueryNameValuePairs().Where(v => v.Key == "type").Select(v => v.Value).FirstOrDefault();
+            List<Charts> list = null;
             ResultModels<List<Charts>> result;
-            ChromeDriverService service = ChromeDriverService.CreateDefaultService();
-            service.HideCommandPromptWindow = true;
-            var options = new ChromeOptions(); 
-            options.AddArgument("--window-position=-32000,-32000"); 
-            options.AddArgument("headless"); //윈도우창 위치값을 화면밖으로 조정
             try
             {
-                using (IWebDriver driver = new ChromeDriver(service, options))
+                if (type == "new")
                 {
-                    driver.Url = "https://www.melon.com/chart/index.htm";
-                    driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(2);
-                    var root = driver.FindElement(By.XPath("//*[@id='frm']/div/table/tbody"));
-                    var trs = root.FindElements(By.CssSelector("tr"));
-                    for (int i = 1; i <= trs.Count; i++)
-                    {
-                        Charts chart = new Charts();
-                        chart.Title = root.FindElement(By.XPath("//tr[" + i + "]/td[4]/div/div/div[1]/span/a")).Text;
-                        chart.Rank = i;
-
-                        var singer_root = root.FindElement(By.XPath("//tr[" + i + "]/td[4]/div/div/div[2]"));
-                        var singer_a_tags = singer_root.FindElements(By.XPath("./a"));
-
-                        string singers = "";
-                        int singer_cnt = singer_a_tags.Count;
-                        for (int j = 1; j <= singer_cnt; j++)
-                        {
-                            string singer = singer_root.FindElement(By.XPath("./a[" + j + "]")).Text;
-                            Trace.WriteLine(singer);
-                            if (j == singer_cnt)
-                            {
-                                singers += singer;
-                                break;
-                            }
-                            singers += singer + ", ";
-                        }
-
-                        Trace.WriteLine(i + " " + singer_cnt);
-                        chart.Singer = singers;
-                        chart.Regdate = DateTime.Today;
-                        chart.Status = 1;
-                        if(chart.Singer == null || chart.Title == null) //크롤링 도중 가수명과 곡 제목을 수집하지 못했을 시
-                        {
-                            result = new ResultModels<List<Charts>>(false, list);
-                            return result;
-                        }
-                        list.Add(chart);
-                    }
+                    list = db.Charts.Where(x => x.Status == 2).ToList<Charts>();
                 }
-                if(list.Count() == 100) //100개의 행을 모두 성공적으로 파싱할 시
+                else
                 {
-                    result = new ResultModels<List<Charts>>(true, list);
-                    return result;
+                    list = db.Charts.Where(x => x.Status == 1 || x.Status == 2).ToList<Charts>();
                 }
-                else //모든 행을 파싱하는 데 실패할 시
-                {
-                    result = new ResultModels<List<Charts>>(false, list);
-                    return result;
-                }
+                result = new ResultModels<List<Charts>>(true, list);
             }
-            catch (Exception e)  //예외가 발생할 시
+            catch(Exception e)
             {
-                Trace.WriteLine(e);
                 result = new ResultModels<List<Charts>>(false, list);
                 return result;
             }
+            return result;
         }
 
-        // GET api/<controller> //일단 테스트용으로 GET메서드. 크롤링해서 곡 db에 저장함.
-        public IHttpActionResult Get()
+        // POST api/<controller> : 최신 차트 목록을 크롤링해서 곡 DB에 저장함. 이전 차트 목록은 만료 상태로 변경, 만료 상태의 차트 목록은 삭제
+        public async Task<Dictionary<string, string>> Post()
         {
-            ResultModels<List<Charts>> result = SongCrawling();
+            Trace.WriteLine("[Request Mapping : POST : api/chart/:idx]");
+            var task = Task.Run(() => crawller.SongCrawling());
+            ResultModels<List<Charts>> result = await task;
             Trace.WriteLine("" + result.Success + result.ResultList.Count);
+            Dictionary<string, string> resultMap = new Dictionary<string, string>();
             if (result.Success == true)
             {
                 try
@@ -121,36 +90,25 @@ namespace SongSlackbot.Controllers
                         db.Charts.Add(chart);
                     }
                     db.SaveChanges();   //100개 전부 성공적으로 insert시 commit
-                    return Json("success");
+                    resultMap.Add("result", "success");
+                    return resultMap;
                 }
                 catch
                 {
-                    return Json("fail");
+                    resultMap.Add("result", "fail");
+                    return resultMap;
                 }
             }
-            return Json("fail");
+            resultMap.Add("result", "fail");
+            return resultMap;
         }
-
-
-        // GET api/<controller>/5
-        public string Get(int id)
+        
+        //test
+        public Dictionary<string, string> Post(int id)
         {
-            return "value";
-        }
-
-        // POST api/<controller>
-        public void Post([FromBody]string value)
-        {
-        }
-
-        // PUT api/<controller>/5
-        public void Put(int id, [FromBody]string value)
-        {
-        }
-
-        // DELETE api/<controller>/5
-        public void Delete(int id)
-        {
+            Dictionary<string, string> resultMap = new Dictionary<string, string>();
+            resultMap.Add("result", "fail");
+            return resultMap;
         }
     }
 }
