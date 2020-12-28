@@ -10,7 +10,7 @@ using System.Collections.Generic;
 /// </summary>
 public class SlackBot
 {
-    private readonly Uri _uri = new Uri("https://hooks.slack.com/services/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");
+    private readonly Uri _uri = new Uri("https://hooks.slack.com/services/..");
     private readonly Encoding _encoding = new UTF8Encoding();
     
     public void PostMessage(string title, string text, string fallback, string username = null, string channel = null, string iconurl = null)
