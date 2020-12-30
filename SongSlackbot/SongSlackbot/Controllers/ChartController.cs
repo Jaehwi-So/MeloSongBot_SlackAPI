@@ -18,6 +18,7 @@ namespace SongSlackbot.Controllers
     {
         SongBotEntities db = new SongBotEntities();
         SongCrawller crawller = new SongCrawller();
+        public const int HOT_CHART_UP_RATE = 5; // 급상승 차트 선정 기준 : 차트 상승률 (2이상)
 
 
         // GET api/<controller> : 차트 목록 JSON을 ResultModels형태로 반환. 쿼리 파라미터 : [new : 신곡, hot : 급상승 곡]
@@ -35,7 +36,7 @@ namespace SongSlackbot.Controllers
                 }
                 else if (type == "hot")
                 {
-                    list = db.Charts.Where(x => x.Status >= 10).ToList<Charts>();
+                    list = db.Charts.Where(x => x.Status >= HOT_CHART_UP_RATE).ToList<Charts>();
                 }
                 else
                 {
@@ -67,7 +68,7 @@ namespace SongSlackbot.Controllers
                     List<Charts> delete_list = db.Charts.Where(x => x.Status == 0).ToList<Charts>();
                     db.Charts.RemoveRange(delete_list); //이전 차트 삭제
 
-                    // Status == 1 or 2 or >= 10
+                    // Status == 1 or 2 or >= HOT_CHART_UP_RATE
                     List<Charts> before_list = db.Charts.Where(x => x.Status >= 1).Take(100).OrderBy(x => x.Rank).ToList<Charts>();
                     foreach(Charts chart in before_list)    //추출 후 사용안함 상태로 변경
                     {
@@ -82,11 +83,11 @@ namespace SongSlackbot.Controllers
                         {
                             chart.Status = 2;   //Status == 2 : 신곡 
                         }
-                        else {  // 10위 이상 Chart 상승한 곡
+                        else {  // HOT_CHART_UP_RATE위 이상 Chart 상승한 곡
                             int? yester_rank = before_list.Where(x => x.Title == chart.Title).Select(x => x.Rank).First();
-                            if(yester_rank != null && chart.Rank <= yester_rank - 10)
+                            if(yester_rank != null && chart.Rank <= yester_rank - HOT_CHART_UP_RATE)
                             {
-                                chart.Status = yester_rank - chart.Rank;    //Status >= 10 : 급상승 차트곡
+                                chart.Status = yester_rank - chart.Rank;    //Status >= HOT_CHART_UP_RATE : 급상승 차트곡
                             }
                         }
                         db.Charts.Add(chart);

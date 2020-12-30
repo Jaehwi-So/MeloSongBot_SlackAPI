@@ -11,14 +11,20 @@ const slackToken = process.env.SLACK_TOKEN || 'SLACK_TOKEN';
 const apiHost = process.env.API_HOST || 'SLACK_TOKEN';
 const slack = new Slack(slackToken);
 
-const sendMessage = async (message, channel) => {
-  slack.api('chat.postMessage', {
-    username: 'MeloBot',  
-    text: message,
-    channel: channel,  
-    icon_emoji: 'slack'   
-  }, function(err, response){
-    console.log(response);
+const sendMessage = (message, channel) => {
+  return new Promise((resolve, reject) => {
+    slack.api('chat.postMessage', {
+      username: 'MeloBot',  
+      text: message,
+      channel: channel,  
+      icon_emoji: 'slack'   
+    }, function(err, response){
+      if(err){
+        reject();
+      }
+      console.log(response);
+      resolve();
+    });
   });
 }
 
@@ -67,7 +73,7 @@ schedule.scheduleJob('0 0 0 * * *', async () => {
     str += "\n- TOP100 차트 조회 : [오늘, 멜론, 멜론차트, 전체차트, TOP, 차트]"
     str += "\n- 새로 차트인한 신곡 조회 : [신곡, 최신, 차트인]" 
     str += "\n- 차트 급상승 목록 조회 : [급상승, 핫, 순위상승]" 
-    sendMessage(str, process.env.BOT_CHANNAL_ID);
+    await sendMessage(str, process.env.BOT_CHANNAL_ID);
   }
 });
 
