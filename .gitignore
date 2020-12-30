@@ -3,6 +3,7 @@
 
 .bin/
 .obj/
+.env
 
 # User-specific files
 *.suo
